@@ -1,0 +1,11 @@
+{
+  "name": "transaction-api",
+  "version": "1.0.0",
+  "main": "app.js",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-sns": "^3.56.0",
+    "aws-sdk": "^2.1090.0",
+    "dotenv": "^16.0.0"
+  }
+}

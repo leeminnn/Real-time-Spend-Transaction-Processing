@@ -1,0 +1,40 @@
+name: Lambda File reader deploy to ECR
+
+on:
+  pull_request:
+    branches: [ dev ]
+  push:
+    branches: [ feature/lambda-file-reader ]
+
+jobs:
+  build:
+    name: Build Image
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./app/backend-v1/lambda-functions/file-reader
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: us-east-1
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      - name: Build, tag and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: itsag1t5-lambda-file-reader
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG

@@ -1,0 +1,115 @@
+name: Frontend CI/CD
+on:
+  pull_request:
+    branches: [dev]
+defaults:
+  run:
+    working-directory: app/frontend-v1
+jobs:
+  install-cache:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Cache yarn dependencies
+        uses: actions/cache@v2
+        id: cache-dependencies
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - name: Install Dependencies
+        # Check for `cache-hit` (`steps.cache-dependencies.cache-hit != 'true'`)
+        # If there's a cache hit, we skip this step (the dependencies are already available)
+        # If there's no cache hit, we run "yarn install"
+        if: steps.cache-dependencies.outputs.cache-hit != 'true'
+        run: |
+          yarn install --force --non-interactive
+
+  lint-format:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
+    needs: [install-cache]
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Restore yarn dependencies
+        uses: actions/cache@v2
+        id: cache-dependencies
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - name: Run lint
+        run: |
+          yarn lint
+      - name: Run prettier
+        run: |
+          yarn format
+
+  unit-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
+    needs: [install-cache]
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Restore yarn dependencies
+        uses: actions/cache@v2
+        id: cache-dependencies
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - name: Run test
+        run: |
+          yarn test
+  
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
+    needs: [lint-format, unit-test, install-cache]
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v2
+      - name: Restore yarn dependencies
+        uses: actions/cache@v2
+        id: cache-dependencies
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - name: Run build
+        run: |
+          yarn build

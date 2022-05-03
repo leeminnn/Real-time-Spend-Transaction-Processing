@@ -1,0 +1,6 @@
+boto3==1.20.42
+fastapi
+pymysql
+requests
+uvicorn
+python-dotenv
